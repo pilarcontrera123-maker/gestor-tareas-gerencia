@@ -52,7 +52,12 @@
                     </div>
                     <div>
                         <h1 class="text-xl font-bold leading-tight">Sistema de Seguimiento y Calendario</h1>
-                        <p class="text-xs text-slate-400">Control de Tareas, Vencimientos y Registro de Áreas</p>
+                        <div class="flex items-center gap-2">
+                            <p class="text-xs text-slate-400">Control de Tareas, Vencimientos y Registro de Áreas</p>
+                            <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Nube en Vivo
+                            </span>
+                        </div>
                     </div>
                 </div>
                 
@@ -245,10 +250,58 @@
         </div>
     </div>
 
-    <script>
-        const SECRET_PASS = "Gerencia2026";
+    <!-- FIREBASE REALTIME DATABASE ENGINE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        function checkPassword(e) {
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2s6Uizp3pS8c-w9Jlh6KbdZIp3yaCFBk",
+            authDomain: "tareas-gerencia.firebaseapp.com",
+            projectId: "tareas-gerencia",
+            storageBucket: "tareas-gerencia.firebasestorage.app",
+            messagingSenderId: "161186133845",
+            appId: "1:161186133845:web:83fffd40e91a5be238a1dc",
+            databaseURL: "https://tareas-gerencia-default-rtdb.firebaseio.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const SECRET_PASS = "Gerencia2026";
+        const initialAreas = ['Gerencia', 'RRHH / Laboral', 'Contabilidad / Impuestos', 'Legal / Institucional'];
+        
+        let areas = initialAreas;
+        let tasks = [];
+        let weekOffset = 0;
+
+        // Escuchar cambios de Firebase en tiempo real
+        const tasksRef = ref(db, 'app_data/tasks');
+        const areasRef = ref(db, 'app_data/areas');
+
+        onValue(tasksRef, (snapshot) => {
+            const data = snapshot.val();
+            tasks = data ? Object.values(data) : [];
+            renderAll();
+        });
+
+        onValue(areasRef, (snapshot) => {
+            const data = snapshot.val();
+            areas = data ? Object.values(data) : initialAreas;
+            populateAreaSelects();
+            renderAll();
+        });
+
+        function saveTasksToFirebase() {
+            set(ref(db, 'app_data/tasks'), tasks);
+        }
+
+        function saveAreasToFirebase() {
+            set(ref(db, 'app_data/areas'), areas);
+        }
+
+        window.checkPassword = function(e) {
             e.preventDefault();
             const inputPass = document.getElementById('access-password').value;
             if (inputPass === SECRET_PASS) {
@@ -257,35 +310,20 @@
             } else {
                 document.getElementById('auth-error').classList.remove('hidden');
             }
-        }
+        };
 
-        function showApp() {
+        window.showApp = function() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-content').classList.remove('hidden');
             document.getElementById('app-content').classList.add('flex');
             populateAreaSelects();
             renderAll();
-        }
+        };
 
-        function logout() {
+        window.logout = function() {
             sessionStorage.removeItem('auth_success');
             location.reload();
-        }
-
-        const initialAreas = ['Gerencia', 'RRHH / Laboral', 'Contabilidad / Impuestos', 'Legal / Institucional'];
-        const initialTasks = [
-            { id: 'TSK-101', title: 'Reunión de Control de Libros Sueldos', description: 'Verificar carátula y folios 0001 a 1750 guardados en Caja Archivo N° 1', area: 'RRHH / Laboral', assignedTo: 'Asistente Gerencia', startDate: '2026-10-26', dueDate: '2026-10-27', taskTime: '09:30', status: 'En Proceso', completedAt: null, completedBy: null },
-            { id: 'TSK-102', title: 'Escaneo de Libro de Actas N° 4', description: 'Digitalización PDF con OCR de actas 101 a 220', area: 'Legal / Institucional', assignedTo: 'Legales', startDate: '2026-10-27', dueDate: '2026-10-28', taskTime: '15:00', status: 'Pendiente', completedAt: null, completedBy: null }
-        ];
-
-        let areas = JSON.parse(localStorage.getItem('gerencia_areas')) || initialAreas;
-        let tasks = JSON.parse(localStorage.getItem('gerencia_tasks')) || initialTasks;
-        let weekOffset = 0;
-
-        function saveStorage() {
-            localStorage.setItem('gerencia_areas', JSON.stringify(areas));
-            localStorage.setItem('gerencia_tasks', JSON.stringify(tasks));
-        }
+        };
 
         function populateAreaSelects() {
             const filterSelect = document.getElementById('filter-area');
@@ -320,30 +358,30 @@
             lucide.createIcons();
         }
 
-        function addArea() {
+        window.addArea = function() {
             const input = document.getElementById('new-area-input');
             const val = input.value.trim();
             if (val && !areas.includes(val)) {
                 areas.push(val);
                 input.value = '';
-                saveStorage();
+                saveAreasToFirebase();
                 populateAreaSelects();
                 renderAreaList();
                 renderAll();
             }
-        }
+        };
 
-        function removeArea(index) {
+        window.removeArea = function(index) {
             if (areas.length <= 1) return alert('Debe haber al menos un área configurada.');
             areas.splice(index, 1);
-            saveStorage();
+            saveAreasToFirebase();
             populateAreaSelects();
             renderAreaList();
             renderAll();
-        }
+        };
 
-        function openAreaModal() { renderAreaList(); document.getElementById('area-modal').classList.remove('hidden'); }
-        function closeAreaModal() { document.getElementById('area-modal').classList.add('hidden'); }
+        window.openAreaModal = function() { renderAreaList(); document.getElementById('area-modal').classList.remove('hidden'); };
+        window.closeAreaModal = function() { document.getElementById('area-modal').classList.add('hidden'); };
 
         function getStartOfWeek(offset = 0) {
             const today = new Date();
@@ -369,14 +407,14 @@
             return { text: `${diffDays} días restantes`, class: 'bg-slate-100 text-slate-700' };
         }
 
-        function renderAll() {
+        window.renderAll = function() {
             renderCalendar();
             renderTable();
             document.getElementById('current-date-str').innerText = new Date().toLocaleDateString('es-AR');
             lucide.createIcons();
-        }
+        };
 
-        function changeWeek(direction) { weekOffset += direction; renderAll(); }
+        window.changeWeek = function(direction) { weekOffset += direction; renderAll(); };
 
         function renderCalendar() {
             const areaFilter = document.getElementById('filter-area').value;
@@ -413,7 +451,6 @@
                     return matchesArea && matchesStatus && (t.startDate === dateISO || t.dueDate === dateISO);
                 });
 
-                // Ordenar por hora (las tareas con hora primero, luego por horario cronológico)
                 dayTasks.sort((a, b) => {
                     if (a.taskTime && !b.taskTime) return -1;
                     if (!a.taskTime && b.taskTime) return 1;
@@ -515,7 +552,7 @@
             });
         }
 
-        function openModal(taskId = null) {
+        window.openModal = function(taskId = null) {
             const modal = document.getElementById('task-modal');
             const form = document.getElementById('task-form');
             form.reset();
@@ -544,11 +581,11 @@
             }
 
             modal.classList.remove('hidden');
-        }
+        };
 
-        function closeModal() { document.getElementById('task-modal').classList.add('hidden'); }
+        window.closeModal = function() { document.getElementById('task-modal').classList.add('hidden'); };
 
-        function saveTask(e) {
+        window.saveTask = function(e) {
             e.preventDefault();
             const id = document.getElementById('task-id').value;
             const title = document.getElementById('task-title').value;
@@ -571,20 +608,20 @@
                 });
             }
 
-            saveStorage();
+            saveTasksToFirebase();
             closeModal();
             renderAll();
-        }
+        };
 
-        function openCompleteModal(taskId) {
+        window.openCompleteModal = function(taskId) {
             document.getElementById('complete-task-id').value = taskId;
             document.getElementById('completed-by-input').value = '';
             document.getElementById('complete-modal').classList.remove('hidden');
-        }
+        };
 
-        function closeCompleteModal() { document.getElementById('complete-modal').classList.add('hidden'); }
+        window.closeCompleteModal = function() { document.getElementById('complete-modal').classList.add('hidden'); };
 
-        function confirmCompletion(e) {
+        window.confirmCompletion = function(e) {
             e.preventDefault();
             const taskId = document.getElementById('complete-task-id').value;
             const completedBy = document.getElementById('completed-by-input').value;
@@ -596,22 +633,22 @@
                 task.status = 'Finalizado';
                 task.completedAt = timestamp;
                 task.completedBy = completedBy;
-                saveStorage();
+                saveTasksToFirebase();
             }
 
             closeCompleteModal();
             renderAll();
-        }
+        };
 
-        function deleteTask(taskId) {
+        window.deleteTask = function(taskId) {
             if (confirm('¿Deseas eliminar esta tarea?')) {
                 tasks = tasks.filter(t => t.id !== taskId);
-                saveStorage();
+                saveTasksToFirebase();
                 renderAll();
             }
-        }
+        };
 
-        function exportWeeklyPDF() {
+        window.exportWeeklyPDF = function() {
             const element = document.getElementById('printable-calendar-area');
             const area = document.getElementById('filter-area').value;
             const opt = {
@@ -622,7 +659,7 @@
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();
-        }
+        };
 
         window.onload = () => {
             lucide.createIcons();
