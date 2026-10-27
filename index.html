@@ -1,0 +1,634 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww29200\viewh18460\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 <!DOCTYPE html>\
+<html lang="es">\
+<head>\
+    <meta charset="UTF-8">\
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">\
+    <title>Gestor de Tareas y Calendario Semanal - Gerencia CPCE</title>\
+    <!-- Tailwind CSS -->\
+    <script src="https://cdn.tailwindcss.com"></script>\
+    <!-- Lucide Icons -->\
+    <script src="https://unpkg.com/lucide@latest"></script>\
+    <!-- html2pdf.js for clean PDF export -->\
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>\
+    <style>\
+        @media print \{\
+            body * \{ visibility: hidden; \}\
+            #printable-calendar-area, #printable-calendar-area * \{ visibility: visible; \}\
+            #printable-calendar-area \{ position: absolute; left: 0; top: 0; width: 100%; \}\
+            .no-print \{ display: none !important; \}\
+        \}\
+    </style>\
+</head>\
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen flex flex-col">\
+\
+    <!-- Header / Navbar -->\
+    <header class="bg-slate-900 text-white shadow-md no-print">\
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">\
+            <div class="flex items-center gap-3">\
+                <div class="bg-indigo-600 p-2 rounded-lg">\
+                    <i data-lucide="check-square" class="w-6 h-6 text-white"></i>\
+                </div>\
+                <div>\
+                    <h1 class="text-xl font-bold leading-tight">Sistema de Seguimiento y Calendario</h1>\
+                    <p class="text-xs text-slate-400">Control de Tareas, Vencimientos y Registro de \'c1reas</p>\
+                </div>\
+            </div>\
+            \
+            <div class="flex flex-wrap items-center gap-2">\
+                <button onclick="openAreaModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">\
+                    <i data-lucide="settings" class="w-4 h-4"></i>\
+                    Gestionar \'c1reas\
+                </button>\
+                <button onclick="exportWeeklyPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow">\
+                    <i data-lucide="download" class="w-4 h-4"></i>\
+                    Exportar / Imprimir PDF\
+                </button>\
+                <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow">\
+                    <i data-lucide="plus" class="w-4 h-4"></i>\
+                    Nueva Tarea\
+                </button>\
+            </div>\
+        </div>\
+    </header>\
+\
+    <!-- Main Content -->\
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full flex flex-col gap-6">\
+\
+        <!-- Controls & Filters (No Print) -->\
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 no-print">\
+            <div class="flex flex-wrap items-center gap-3">\
+                <div>\
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Filtrar por \'c1rea:</label>\
+                    <select id="filter-area" onchange="renderAll()" class="bg-slate-50 border border-slate-300 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">\
+                        <!-- Dynamic Area Load -->\
+                    </select>\
+                </div>\
+\
+                <div>\
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Estado:</label>\
+                    <select id="filter-status" onchange="renderAll()" class="bg-slate-50 border border-slate-300 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">\
+                        <option value="TODOS">Todos los Estados</option>\
+                        <option value="Pendiente">Pendiente</option>\
+                        <option value="En Proceso">En Proceso</option>\
+                        <option value="Finalizado">Finalizado</option>\
+                    </select>\
+                </div>\
+            </div>\
+\
+            <div class="flex items-center gap-2">\
+                <button onclick="changeWeek(-1)" class="p-2 border rounded-lg hover:bg-slate-100"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>\
+                <span id="week-label" class="text-sm font-semibold text-slate-700 px-2">Semana Actual</span>\
+                <button onclick="changeWeek(1)" class="p-2 border rounded-lg hover:bg-slate-100"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>\
+            </div>\
+        </div>\
+\
+        <!-- Weekly Calendar Export Area -->\
+        <div id="printable-calendar-area" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">\
+            <div class="flex justify-between items-center border-b pb-4 mb-4">\
+                <div>\
+                    <h2 class="text-2xl font-bold text-slate-800">Calendario Semanal de Tareas y Vencimientos</h2>\
+                    <p id="area-subtitle" class="text-sm text-slate-500">\'c1rea: Todas | Reporte Semanal</p>\
+                </div>\
+                <div class="text-right">\
+                    <span id="print-date-range" class="text-sm font-semibold text-indigo-600"></span>\
+                    <p class="text-xs text-slate-400">Generado el: <span id="current-date-str"></span></p>\
+                </div>\
+            </div>\
+\
+            <div id="calendar-grid" class="grid grid-cols-1 md:grid-cols-5 gap-4">\
+                <!-- Columns Monday to Friday -->\
+            </div>\
+        </div>\
+\
+        <!-- Table View with Full Audit Trail -->\
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 no-print">\
+            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">\
+                <i data-lucide="list" class="w-5 h-5 text-indigo-600"></i>\
+                Registro Detallado y Trazabilidad de Tareas\
+            </h3>\
+\
+            <div class="overflow-x-auto">\
+                <table class="w-full text-left border-collapse">\
+                    <thead>\
+                        <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">\
+                            <th class="p-3 border-b">ID / \'c1rea</th>\
+                            <th class="p-3 border-b">Tarea / Descripci\'f3n</th>\
+                            <th class="p-3 border-b">Asignado a</th>\
+                            <th class="p-3 border-b">Inicio</th>\
+                            <th class="p-3 border-b">Vencimiento</th>\
+                            <th class="p-3 border-b">D\'edas Restantes</th>\
+                            <th class="p-3 border-b">Estado</th>\
+                            <th class="p-3 border-b">Registro de Finalizaci\'f3n</th>\
+                            <th class="p-3 border-b text-center">Acciones</th>\
+                        </tr>\
+                    </thead>\
+                    <tbody id="task-table-body" class="text-sm divide-y divide-slate-200">\
+                        <!-- Dynamic Rows -->\
+                    </tbody>\
+                </table>\
+            </div>\
+        </div>\
+\
+    </main>\
+\
+    <!-- Modal: Add / Edit Task -->\
+    <div id="task-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-50 no-print">\
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative">\
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">\
+                <i data-lucide="x" class="w-5 h-5"></i>\
+            </button>\
+            <h3 id="modal-title" class="text-lg font-bold text-slate-800 mb-4">Nueva Tarea / Evento</h3>\
+\
+            <form id="task-form" onsubmit="saveTask(event)" class="space-y-4">\
+                <input type="hidden" id="task-id">\
+\
+                <div>\
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">T\'edtulo de la Tarea / Evento *</label>\
+                    <input type="text" id="task-title" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ej: Control y foliado de Libros Sueldos">\
+                </div>\
+\
+                <div class="grid grid-cols-2 gap-4">\
+                    <div>\
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">\'c1rea / Sector *</label>\
+                        <select id="task-area" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">\
+                            <!-- Dynamic Area Options -->\
+                        </select>\
+                    </div>\
+\
+                    <div>\
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Persona Asignada *</label>\
+                        <input type="text" id="task-assigned" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ej: Asistente Gerencia">\
+                    </div>\
+                </div>\
+\
+                <div class="grid grid-cols-2 gap-4">\
+                    <div>\
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha de Inicio *</label>\
+                        <input type="date" id="task-start-date" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">\
+                    </div>\
+\
+                    <div>\
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha de Vencimiento *</label>\
+                        <input type="date" id="task-due-date" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">\
+                    </div>\
+                </div>\
+\
+                <div>\
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Estado Inicial</label>\
+                    <select id="task-status" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">\
+                        <option value="Pendiente">\uc0\u55357 \u56628  Pendiente</option>\
+                        <option value="En Proceso">\uc0\u55357 \u57313  En Proceso</option>\
+                        <option value="Finalizado">\uc0\u55357 \u57314  Finalizado</option>\
+                    </select>\
+                </div>\
+\
+                <div class="flex justify-end gap-2 pt-2">\
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100">Cancelar</button>\
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow">Guardar Tarea</button>\
+                </div>\
+            </form>\
+        </div>\
+    </div>\
+\
+    <!-- Modal: Area Management -->\
+    <div id="area-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-50 no-print">\
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">\
+            <button onclick="closeAreaModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">\
+                <i data-lucide="x" class="w-5 h-5"></i>\
+            </button>\
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Configurar \'c1reas / Categor\'edas</h3>\
+            <p class="text-xs text-slate-500 mb-4">Agrega o elimina los sectores disponibles para organizar tus tareas.</p>\
+\
+            <div class="flex gap-2 mb-4">\
+                <input type="text" id="new-area-input" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Nombre del \'e1rea (ej: Compras)">\
+                <button onclick="addArea()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-semibold">Agregar</button>\
+            </div>\
+\
+            <div class="border rounded-lg p-3 max-h-48 overflow-y-auto divide-y divide-slate-100" id="area-list-container">\
+                <!-- Area List Items -->\
+            </div>\
+\
+            <div class="flex justify-end pt-4">\
+                <button onclick="closeAreaModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium">Cerrar</button>\
+            </div>\
+        </div>\
+    </div>\
+\
+    <!-- Modal: Complete Task -->\
+    <div id="complete-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-50 no-print">\
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">\
+            <button onclick="closeCompleteModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">\
+                <i data-lucide="x" class="w-5 h-5"></i>\
+            </button>\
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Registrar Finalizaci\'f3n</h3>\
+            <p class="text-xs text-slate-500 mb-4">Ingresa el nombre del responsable que complet\'f3 la tarea.</p>\
+\
+            <form onsubmit="confirmCompletion(event)" class="space-y-4">\
+                <input type="hidden" id="complete-task-id">\
+\
+                <div>\
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre / Usuario que Completa *</label>\
+                    <input type="text" id="completed-by-input" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ej: Mar\'eda P\'e9rez (Asistente)">\
+                </div>\
+\
+                <div class="flex justify-end gap-2 pt-2">\
+                    <button type="button" onclick="closeCompleteModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100">Cancelar</button>\
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow">Marcar Como Finalizado</button>\
+                </div>\
+            </form>\
+        </div>\
+    </div>\
+\
+    <script>\
+        const initialAreas = ['Gerencia', 'RRHH / Laboral', 'Contabilidad / Impuestos', 'Legal / Institucional'];\
+\
+        const initialTasks = [\
+            \{\
+                id: 'TSK-101',\
+                title: 'Control y foliado de Libros Sueldos (2015-2020)',\
+                area: 'RRHH / Laboral',\
+                assignedTo: 'Asistente Gerencia',\
+                startDate: '2026-10-26',\
+                dueDate: '2026-10-27',\
+                status: 'En Proceso',\
+                completedAt: null,\
+                completedBy: null\
+            \},\
+            \{\
+                id: 'TSK-102',\
+                title: 'Escaneo de Libro de Actas N\'b0 4',\
+                area: 'Legal / Institucional',\
+                assignedTo: 'Legales',\
+                startDate: '2026-10-27',\
+                dueDate: '2026-10-28',\
+                status: 'Pendiente',\
+                completedAt: null,\
+                completedBy: null\
+            \}\
+        ];\
+\
+        let areas = JSON.parse(localStorage.getItem('gerencia_areas')) || initialAreas;\
+        let tasks = JSON.parse(localStorage.getItem('gerencia_tasks')) || initialTasks;\
+        let weekOffset = 0;\
+\
+        function saveStorage() \{\
+            localStorage.setItem('gerencia_areas', JSON.stringify(areas));\
+            localStorage.setItem('gerencia_tasks', JSON.stringify(tasks));\
+        \}\
+\
+        function populateAreaSelects() \{\
+            const filterSelect = document.getElementById('filter-area');\
+            const taskSelect = document.getElementById('task-area');\
+\
+            const currentFilter = filterSelect.value || 'TODAS';\
+            const currentTaskArea = taskSelect.value;\
+\
+            filterSelect.innerHTML = '<option value="TODAS">Todas las \'c1reas</option>';\
+            taskSelect.innerHTML = '';\
+\
+            areas.forEach(a => \{\
+                filterSelect.innerHTML += `<option value="$\{a\}">$\{a\}</option>`;\
+                taskSelect.innerHTML += `<option value="$\{a\}">$\{a\}</option>`;\
+            \});\
+\
+            filterSelect.value = currentFilter;\
+            if (currentTaskArea && areas.includes(currentTaskArea)) \{\
+                taskSelect.value = currentTaskArea;\
+            \}\
+        \}\
+\
+        function renderAreaList() \{\
+            const container = document.getElementById('area-list-container');\
+            container.innerHTML = '';\
+\
+            areas.forEach((area, index) => \{\
+                container.innerHTML += `\
+                    <div class="flex justify-between items-center py-2 text-sm">\
+                        <span class="text-slate-700 font-medium">$\{area\}</span>\
+                        <button onclick="removeArea($\{index\})" class="text-rose-500 hover:text-rose-700 p-1">\
+                            <i data-lucide="trash" class="w-4 h-4"></i>\
+                        </button>\
+                    </div>\
+                `;\
+            \});\
+            lucide.createIcons();\
+        \}\
+\
+        function addArea() \{\
+            const input = document.getElementById('new-area-input');\
+            const val = input.value.trim();\
+            if (val && !areas.includes(val)) \{\
+                areas.push(val);\
+                input.value = '';\
+                saveStorage();\
+                populateAreaSelects();\
+                renderAreaList();\
+                renderAll();\
+            \}\
+        \}\
+\
+        function removeArea(index) \{\
+            if (areas.length <= 1) \{\
+                alert('Debe haber al menos un \'e1rea configurada.');\
+                return;\
+            \}\
+            areas.splice(index, 1);\
+            saveStorage();\
+            populateAreaSelects();\
+            renderAreaList();\
+            renderAll();\
+        \}\
+\
+        function openAreaModal() \{\
+            renderAreaList();\
+            document.getElementById('area-modal').classList.remove('hidden');\
+        \}\
+\
+        function closeAreaModal() \{\
+            document.getElementById('area-modal').classList.add('hidden');\
+        \}\
+\
+        function getStartOfWeek(offset = 0) \{\
+            const today = new Date();\
+            const day = today.getDay();\
+            const diff = today.getDate() - day + (day === 0 ? -6 : 1);\
+            const monday = new Date(today.setDate(diff));\
+            monday.setDate(monday.getDate() + (offset * 7));\
+            monday.setHours(0, 0, 0, 0);\
+            return monday;\
+        \}\
+\
+        function formatDateISO(date) \{ return date.toISOString().split('T')[0]; \}\
+\
+        function formatDateShort(dateStr) \{\
+            if (!dateStr) return '-';\
+            const [y, m, d] = dateStr.split('T')[0].split('-');\
+            return `$\{d\}/$\{m\}/$\{y\}`;\
+        \}\
+\
+        function calculateDaysRemaining(dueDateStr, status) \{\
+            if (status === 'Finalizado') return \{ text: 'Completado', class: 'bg-emerald-100 text-emerald-800' \};\
+            const today = new Date();\
+            today.setHours(0, 0, 0, 0);\
+            const due = new Date(dueDateStr + 'T00:00:00');\
+            const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));\
+\
+            if (diffDays < 0) return \{ text: `Vencido hace $\{Math.abs(diffDays)\} d`, class: 'bg-rose-100 text-rose-800 font-bold' \};\
+            if (diffDays === 0) return \{ text: '\'a1Vence Hoy!', class: 'bg-amber-100 text-amber-800 font-bold' \};\
+            return \{ text: `$\{diffDays\} d\'edas restantes`, class: 'bg-slate-100 text-slate-700' \};\
+        \}\
+\
+        function renderAll() \{\
+            renderCalendar();\
+            renderTable();\
+            document.getElementById('current-date-str').innerText = new Date().toLocaleDateString('es-AR');\
+            lucide.createIcons();\
+        \}\
+\
+        function changeWeek(direction) \{\
+            weekOffset += direction;\
+            renderAll();\
+        \}\
+\
+        function renderCalendar() \{\
+            const areaFilter = document.getElementById('filter-area').value;\
+            const statusFilter = document.getElementById('filter-status').value;\
+            const calendarGrid = document.getElementById('calendar-grid');\
+            \
+            document.getElementById('area-subtitle').innerText = `\'c1rea: $\{areaFilter\} | Vista Semanal`;\
+\
+            const monday = getStartOfWeek(weekOffset);\
+            const weekDays = [];\
+            const dayNames = ['Lunes', 'Martes', 'Mi\'e9rcoles', 'Jueves', 'Viernes'];\
+\
+            for (let i = 0; i < 5; i++) \{\
+                const d = new Date(monday);\
+                d.setDate(monday.getDate() + i);\
+                weekDays.push(d);\
+            \}\
+\
+            const endDate = new Date(monday);\
+            endDate.setDate(monday.getDate() + 4);\
+\
+            document.getElementById('print-date-range').innerText = `$\{monday.toLocaleDateString('es-AR')\} al $\{endDate.toLocaleDateString('es-AR')\}`;\
+            document.getElementById('week-label').innerText = weekOffset === 0 ? 'Esta Semana' : `Semana ($\{monday.toLocaleDateString('es-AR')\})`;\
+\
+            calendarGrid.innerHTML = '';\
+\
+            weekDays.forEach((dayDate, index) => \{\
+                const dateISO = formatDateISO(dayDate);\
+                const dayName = dayNames[index];\
+                const dayFormatted = dayDate.getDate() + '/' + (dayDate.getMonth() + 1);\
+\
+                const dayTasks = tasks.filter(t => \{\
+                    const matchesArea = (areaFilter === 'TODAS' || t.area === areaFilter);\
+                    const matchesStatus = (statusFilter === 'TODOS' || t.status === statusFilter);\
+                    const isRelevantDay = (t.startDate === dateISO || t.dueDate === dateISO);\
+                    return matchesArea && matchesStatus && isRelevantDay;\
+                \});\
+\
+                let dayHtml = `\
+                    <div class="border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex flex-col min-h-[220px]">\
+                        <div class="border-b pb-2 mb-2 flex justify-between items-center">\
+                            <span class="font-bold text-slate-700">$\{dayName\}</span>\
+                            <span class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-full">$\{dayFormatted\}</span>\
+                        </div>\
+                        <div class="space-y-2 flex-1">\
+                `;\
+\
+                if (dayTasks.length === 0) \{\
+                    dayHtml += `<p class="text-xs text-slate-400 italic text-center pt-4">Sin tareas</p>`;\
+                \} else \{\
+                    dayTasks.forEach(t => \{\
+                        const isDue = t.dueDate === dateISO;\
+                        const isStart = t.startDate === dateISO;\
+                        let badgeColor = t.status === 'Finalizado' ? 'bg-emerald-100 text-emerald-800' : (t.status === 'En Proceso' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800');\
+\
+                        dayHtml += `\
+                            <div class="p-2 rounded border bg-white shadow-sm text-xs space-y-1">\
+                                <span class="font-semibold text-slate-800 leading-snug block">$\{t.title\}</span>\
+                                <div class="flex flex-wrap gap-1 items-center pt-1 text-[10px]">\
+                                    <span class="px-1.5 py-0.5 rounded $\{badgeColor\}">$\{t.status\}</span>\
+                                    $\{isDue ? '<span class="bg-rose-600 text-white font-bold px-1 rounded">VENCE HOY</span>' : ''\}\
+                                    $\{isStart ? '<span class="bg-blue-600 text-white px-1 rounded">INICIA</span>' : ''\}\
+                                </div>\
+                                <div class="text-[10px] text-slate-500 flex justify-between pt-1 border-t">\
+                                    <span>\uc0\u55357 \u56420  $\{t.assignedTo\}</span>\
+                                    <span class="font-medium">$\{t.area\}</span>\
+                                </div>\
+                            </div>\
+                        `;\
+                    \});\
+                \}\
+\
+                dayHtml += `</div></div>`;\
+                calendarGrid.innerHTML += dayHtml;\
+            \});\
+        \}\
+\
+        function renderTable() \{\
+            const areaFilter = document.getElementById('filter-area').value;\
+            const statusFilter = document.getElementById('filter-status').value;\
+            const tbody = document.getElementById('task-table-body');\
+            tbody.innerHTML = '';\
+\
+            const filteredTasks = tasks.filter(t => \{\
+                const matchesArea = (areaFilter === 'TODAS' || t.area === areaFilter);\
+                const matchesStatus = (statusFilter === 'TODOS' || t.status === statusFilter);\
+                return matchesArea && matchesStatus;\
+            \});\
+\
+            if (filteredTasks.length === 0) \{\
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">Sin tareas registradas con estos filtros.</td></tr>`;\
+                return;\
+            \}\
+\
+            filteredTasks.forEach(t => \{\
+                const daysInfo = calculateDaysRemaining(t.dueDate, t.status);\
+                let statusBadge = t.status === 'Finalizado' ? '\uc0\u55357 \u57314  Finalizado' : (t.status === 'En Proceso' ? '\u55357 \u57313  En Proceso' : '\u55357 \u56628  Pendiente');\
+\
+                const tr = document.createElement('tr');\
+                tr.className = 'hover:bg-slate-50 transition';\
+                tr.innerHTML = `\
+                    <td class="p-3 font-mono text-xs font-semibold text-slate-600 border-b">\
+                        <div>$\{t.id\}</div>\
+                        <span class="text-[10px] text-slate-400 uppercase font-sans">$\{t.area\}</span>\
+                    </td>\
+                    <td class="p-3 font-medium text-slate-800 border-b">$\{t.title\}</td>\
+                    <td class="p-3 text-slate-600 border-b">$\{t.assignedTo\}</td>\
+                    <td class="p-3 text-slate-600 border-b">$\{formatDateShort(t.startDate)\}</td>\
+                    <td class="p-3 text-slate-600 border-b font-medium">$\{formatDateShort(t.dueDate)\}</td>\
+                    <td class="p-3 border-b"><span class="px-2 py-1 rounded text-xs $\{daysInfo.class\}">$\{daysInfo.text\}</span></td>\
+                    <td class="p-3 border-b font-semibold text-xs">$\{statusBadge\}</td>\
+                    <td class="p-3 border-b text-xs text-slate-500">\
+                        $\{t.completedAt ? `<div><b>Complet\'f3:</b> $\{t.completedBy\}</div><div class="text-[10px] text-slate-400">\uc0\u55357 \u56658  $\{t.completedAt\}</div>` : '<span class="italic text-slate-400">Sin finalizar</span>'\}\
+                    </td>\
+                    <td class="p-3 border-b text-center">\
+                        <div class="flex items-center justify-center gap-1">\
+                            $\{t.status !== 'Finalizado' ? `<button onclick="openCompleteModal('$\{t.id\}')" title="Completar" class="p-1.5 bg-emerald-50 text-emerald-700 rounded"><i data-lucide="check-circle" class="w-4 h-4"></i></button>` : ''\}\
+                            <button onclick="openModal('$\{t.id\}')" title="Editar" class="p-1.5 bg-slate-100 text-slate-700 rounded"><i data-lucide="edit-3" class="w-4 h-4"></i></button>\
+                            <button onclick="deleteTask('$\{t.id\}')" title="Eliminar" class="p-1.5 bg-rose-50 text-rose-600 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>\
+                        </div>\
+                    </td>\
+                `;\
+                tbody.appendChild(tr);\
+            \});\
+        \}\
+\
+        function openModal(taskId = null) \{\
+            const modal = document.getElementById('task-modal');\
+            const form = document.getElementById('task-form');\
+            form.reset();\
+\
+            if (taskId) \{\
+                const task = tasks.find(t => t.id === taskId);\
+                if (task) \{\
+                    document.getElementById('modal-title').innerText = 'Editar Tarea';\
+                    document.getElementById('task-id').value = task.id;\
+                    document.getElementById('task-title').value = task.title;\
+                    document.getElementById('task-area').value = task.area;\
+                    document.getElementById('task-assigned').value = task.assignedTo;\
+                    document.getElementById('task-start-date').value = task.startDate;\
+                    document.getElementById('task-due-date').value = task.dueDate;\
+                    document.getElementById('task-status').value = task.status;\
+                \}\
+            \} else \{\
+                document.getElementById('modal-title').innerText = 'Nueva Tarea / Evento';\
+                document.getElementById('task-id').value = '';\
+                document.getElementById('task-start-date').value = formatDateISO(new Date());\
+                document.getElementById('task-due-date').value = formatDateISO(new Date());\
+            \}\
+\
+            modal.classList.remove('hidden');\
+        \}\
+\
+        function closeModal() \{ document.getElementById('task-modal').classList.add('hidden'); \}\
+\
+        function saveTask(e) \{\
+            e.preventDefault();\
+            const id = document.getElementById('task-id').value;\
+            const title = document.getElementById('task-title').value;\
+            const area = document.getElementById('task-area').value;\
+            const assignedTo = document.getElementById('task-assigned').value;\
+            const startDate = document.getElementById('task-start-date').value;\
+            const dueDate = document.getElementById('task-due-date').value;\
+            const status = document.getElementById('task-status').value;\
+\
+            if (id) \{\
+                const idx = tasks.findIndex(t => t.id === id);\
+                if (idx !== -1) tasks[idx] = \{ ...tasks[idx], title, area, assignedTo, startDate, dueDate, status \};\
+            \} else \{\
+                tasks.push(\{\
+                    id: 'TSK-' + Math.floor(100 + Math.random() * 900),\
+                    title, area, assignedTo, startDate, dueDate, status,\
+                    completedAt: null, completedBy: null\
+                \});\
+            \}\
+\
+            saveStorage();\
+            closeModal();\
+            renderAll();\
+        \}\
+\
+        function openCompleteModal(taskId) \{\
+            document.getElementById('complete-task-id').value = taskId;\
+            document.getElementById('completed-by-input').value = '';\
+            document.getElementById('complete-modal').classList.remove('hidden');\
+        \}\
+\
+        function closeCompleteModal() \{ document.getElementById('complete-modal').classList.add('hidden'); \}\
+\
+        function confirmCompletion(e) \{\
+            e.preventDefault();\
+            const taskId = document.getElementById('complete-task-id').value;\
+            const completedBy = document.getElementById('completed-by-input').value;\
+            const now = new Date();\
+            const timestamp = now.toLocaleDateString('es-AR') + ' ' + now.toLocaleTimeString('es-AR', \{ hour: '2-digit', minute: '2-digit' \});\
+\
+            const task = tasks.find(t => t.id === taskId);\
+            if (task) \{\
+                task.status = 'Finalizado';\
+                task.completedAt = timestamp;\
+                task.completedBy = completedBy;\
+                saveStorage();\
+            \}\
+\
+            closeCompleteModal();\
+            renderAll();\
+        \}\
+\
+        function deleteTask(taskId) \{\
+            if (confirm('\'bfDeseas eliminar esta tarea?')) \{\
+                tasks = tasks.filter(t => t.id !== taskId);\
+                saveStorage();\
+                renderAll();\
+            \}\
+        \}\
+\
+        function exportWeeklyPDF() \{\
+            const element = document.getElementById('printable-calendar-area');\
+            const area = document.getElementById('filter-area').value;\
+            const opt = \{\
+                margin: [0.3, 0.3, 0.3, 0.3],\
+                filename: `Calendario_Semanal_$\{area.replace(/[^a-zA-Z0-9]/g, '_')\}.pdf`,\
+                image: \{ type: 'jpeg', quality: 0.98 \},\
+                html2canvas: \{ scale: 2 \},\
+                jsPDF: \{ unit: 'in', format: 'a4', orientation: 'landscape' \}\
+            \};\
+            html2pdf().set(opt).from(element).save();\
+        \}\
+\
+        window.onload = () => \{\
+            populateAreaSelects();\
+            renderAll();\
+        \};\
+    </script>\
+</body>\
+</html>}
