@@ -11,7 +11,7 @@
     <!-- html2pdf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- FIREBASE LIBRARIES (COMPAT SDK - SIN ERRORES DE IMPORTACIÓN) -->
+    <!-- FIREBASE LIBRARIES (COMPAT SDK) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
@@ -96,16 +96,6 @@
                         <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Filtrar por Área:</label>
                         <select id="filter-area" onchange="renderAll()" class="bg-slate-50 border border-slate-300 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none"></select>
                     </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Estado:</label>
-                        <select id="filter-status" onchange="renderAll()" class="bg-slate-50 border border-slate-300 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <option value="TODOS">Todos los Estados</option>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="En Proceso">En Proceso</option>
-                            <option value="Finalizado">Finalizado</option>
-                        </select>
-                    </div>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -120,7 +110,7 @@
                 <div class="flex justify-between items-center border-b pb-4 mb-4">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Calendario Semanal de Tareas, Eventos y Vencimientos</h2>
-                        <p id="area-subtitle" class="text-sm text-slate-500">Área: Todas | Reporte Semanal Cronológico</p>
+                        <p id="area-subtitle" class="text-sm text-slate-500">Área: Todas | Reporte Semanal Cronológico Continuo</p>
                     </div>
                     <div class="text-right">
                         <span id="print-date-range" class="text-sm font-semibold text-indigo-600"></span>
@@ -131,12 +121,23 @@
                 <div id="calendar-grid" class="grid grid-cols-1 md:grid-cols-5 gap-4"></div>
             </div>
 
-            <!-- Table View -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 no-print">
-                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <i data-lucide="list" class="w-5 h-5 text-indigo-600"></i>
-                    Registro Detallado y Trazabilidad de Tareas
-                </h3>
+            <!-- Table View con Pestañas de Clasificación -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 no-print space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-3">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="list" class="w-5 h-5 text-indigo-600"></i>
+                        Registro Detallado y Trazabilidad de Tareas
+                    </h3>
+
+                    <!-- Pestañas de Filtro por Estado -->
+                    <div class="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                        <button id="tab-ALL" onclick="setTab('ALL')" class="px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-sm">Todas</button>
+                        <button id="tab-PROCESO" onclick="setTab('PROCESO')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">🟡 En Proceso</button>
+                        <button id="tab-PENDIENTE" onclick="setTab('PENDIENTE')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">🔴 Pendientes</button>
+                        <button id="tab-VENCIDO" onclick="setTab('VENCIDO')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">⚠️ Vencidas</button>
+                        <button id="tab-FINALIZADO" onclick="setTab('FINALIZADO')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">🟢 Finalizadas</button>
+                    </div>
+                </div>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
@@ -146,12 +147,13 @@
                                 <th class="p-3 border-b">Tarea / Evento</th>
                                 <th class="p-3 border-b">Horario</th>
                                 <th class="p-3 border-b">Descripción / Detalles</th>
+                                <th class="p-3 border-b">Avances / Bitácora</th>
                                 <th class="p-3 border-b">Asignado a</th>
                                 <th class="p-3 border-b">Inicio</th>
                                 <th class="p-3 border-b">Vencimiento</th>
                                 <th class="p-3 border-b">Días Restantes</th>
                                 <th class="p-3 border-b">Estado</th>
-                                <th class="p-3 border-b">Registro de Finalización</th>
+                                <th class="p-3 border-b">Registro Finalización</th>
                                 <th class="p-3 border-b text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -175,8 +177,12 @@
                     <input type="text" id="task-title" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Control de Libros Sueldos">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción / Detalles de la Tarea</label>
-                    <textarea id="task-description" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Escanear fojas 0001 a 0250 de la Caja N° 1 y verificar firmas..."></textarea>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción / Detalles Iniciales</label>
+                    <textarea id="task-description" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Escanear fojas 0001 a 0250 de la Caja N° 1..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Avances / Observaciones de Evolución</label>
+                    <textarea id="task-notes" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-amber-50/50" placeholder="Ej: Ya mandé las notas, falta que las devuelvan firmadas..."></textarea>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -257,7 +263,6 @@
 
     <!-- SCRIPT PRINCIPAL INTEGRADO -->
     <script>
-        // Configuración de tu Proyecto Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyB2s6Uizp3pS8c-w9Jlh6KbdZIp3yaCFBk",
             authDomain: "tareas-gerencia.firebaseapp.com",
@@ -268,7 +273,6 @@
             databaseURL: "https://tareas-gerencia-default-rtdb.firebaseio.com"
         };
 
-        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -278,8 +282,8 @@
         let areas = initialAreas;
         let tasks = [];
         let weekOffset = 0;
+        let activeTab = 'ALL';
 
-        // Escuchar datos de la nube en tiempo real
         db.ref('app_data/tasks').on('value', (snapshot) => {
             const data = snapshot.val();
             tasks = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
@@ -323,6 +327,19 @@
         function logout() {
             sessionStorage.removeItem('auth_success');
             location.reload();
+        }
+
+        function setTab(tabName) {
+            activeTab = tabName;
+            ['ALL', 'PROCESO', 'PENDIENTE', 'VENCIDO', 'FINALIZADO'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabName) {
+                    btn.className = 'px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-sm font-bold';
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900 font-semibold';
+                }
+            });
+            renderTable();
         }
 
         function populateAreaSelects() {
@@ -397,14 +414,14 @@
         function formatDateShort(dateStr) { if (!dateStr) return '-'; const [y, m, d] = dateStr.split('T')[0].split('-'); return `${d}/${m}/${y}`; }
 
         function calculateDaysRemaining(dueDateStr, status) {
-            if (status === 'Finalizado') return { text: 'Completado', class: 'bg-emerald-100 text-emerald-800' };
+            if (status === 'Finalizado') return { text: 'Completado', class: 'bg-emerald-100 text-emerald-800', isExpired: false };
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const due = new Date(dueDateStr + 'T00:00:00');
             const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
-            if (diffDays < 0) return { text: `Vencido hace ${Math.abs(diffDays)} d`, class: 'bg-rose-100 text-rose-800 font-bold' };
-            if (diffDays === 0) return { text: '¡Vence Hoy!', class: 'bg-amber-100 text-amber-800 font-bold' };
-            return { text: `${diffDays} días restantes`, class: 'bg-slate-100 text-slate-700' };
+            if (diffDays < 0) return { text: `Vencido hace ${Math.abs(diffDays)} d`, class: 'bg-rose-100 text-rose-800 font-bold', isExpired: true };
+            if (diffDays === 0) return { text: '¡Vence Hoy!', class: 'bg-amber-100 text-amber-800 font-bold', isExpired: false };
+            return { text: `${diffDays} días restantes`, class: 'bg-slate-100 text-slate-700', isExpired: false };
         }
 
         function renderAll() {
@@ -418,9 +435,8 @@
 
         function renderCalendar() {
             const areaFilter = document.getElementById('filter-area').value;
-            const statusFilter = document.getElementById('filter-status').value;
             const calendarGrid = document.getElementById('calendar-grid');
-            document.getElementById('area-subtitle').innerText = `Área: ${areaFilter} | Vista Semanal Cronológica`;
+            document.getElementById('area-subtitle').innerText = `Área: ${areaFilter} | Vista Semanal Rango Continuo`;
 
             const monday = getStartOfWeek(weekOffset);
             const weekDays = [];
@@ -445,10 +461,11 @@
                 const dayName = dayNames[index];
                 const dayFormatted = dayDate.getDate() + '/' + (dayDate.getMonth() + 1);
 
+                // MOSTRAR TAREAS ACTIVAS EN TODO SU RANGO DE DÍAS (INICIO <= HOY <= VENCIMIENTO)
                 let dayTasks = tasks.filter(t => {
                     const matchesArea = (areaFilter === 'TODAS' || t.area === areaFilter);
-                    const matchesStatus = (statusFilter === 'TODOS' || t.status === statusFilter);
-                    return matchesArea && matchesStatus && (t.startDate === dateISO || t.dueDate === dateISO);
+                    const isInRange = (t.startDate <= dateISO && t.dueDate >= dateISO);
+                    return matchesArea && isInRange && t.status !== 'Finalizado';
                 });
 
                 dayTasks.sort((a, b) => {
@@ -468,12 +485,12 @@
                 `;
 
                 if (dayTasks.length === 0) {
-                    dayHtml += `<p class="text-xs text-slate-400 italic text-center pt-4">Sin tareas</p>`;
+                    dayHtml += `<p class="text-xs text-slate-400 italic text-center pt-4">Sin tareas vigentes</p>`;
                 } else {
                     dayTasks.forEach(t => {
                         const isDue = t.dueDate === dateISO;
                         const isStart = t.startDate === dateISO;
-                        let badgeColor = t.status === 'Finalizado' ? 'bg-emerald-100 text-emerald-800' : (t.status === 'En Proceso' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800');
+                        let badgeColor = t.status === 'En Proceso' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800';
 
                         dayHtml += `
                             <div class="p-2 rounded border bg-white shadow-sm text-xs space-y-1">
@@ -481,7 +498,7 @@
                                     <span class="font-semibold text-slate-800 leading-snug block">${t.title}</span>
                                     ${t.taskTime ? `<span class="bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">🕒 ${t.taskTime} hs</span>` : ''}
                                 </div>
-                                ${t.description ? `<p class="text-[10px] text-slate-500 line-clamp-2">${t.description}</p>` : ''}
+                                ${t.notes ? `<p class="text-[10px] text-indigo-700 font-medium bg-indigo-50 p-1 rounded">💬 ${t.notes}</p>` : (t.description ? `<p class="text-[10px] text-slate-500 line-clamp-1">${t.description}</p>` : '')}
                                 <div class="flex flex-wrap gap-1 items-center pt-1 text-[10px]">
                                     <span class="px-1.5 py-0.5 rounded ${badgeColor}">${t.status}</span>
                                     ${isDue ? '<span class="bg-rose-600 text-white font-bold px-1 rounded">VENCE HOY</span>' : ''}
@@ -503,18 +520,24 @@
 
         function renderTable() {
             const areaFilter = document.getElementById('filter-area').value;
-            const statusFilter = document.getElementById('filter-status').value;
             const tbody = document.getElementById('task-table-body');
             tbody.innerHTML = '';
 
             const filteredTasks = tasks.filter(t => {
                 const matchesArea = (areaFilter === 'TODAS' || t.area === areaFilter);
-                const matchesStatus = (statusFilter === 'TODOS' || t.status === statusFilter);
-                return matchesArea && matchesStatus;
+                const daysInfo = calculateDaysRemaining(t.dueDate, t.status);
+
+                let matchesTab = true;
+                if (activeTab === 'PROCESO') matchesTab = (t.status === 'En Proceso');
+                else if (activeTab === 'PENDIENTE') matchesTab = (t.status === 'Pendiente');
+                else if (activeTab === 'VENCIDO') matchesTab = (daysInfo.isExpired && t.status !== 'Finalizado');
+                else if (activeTab === 'FINALIZADO') matchesTab = (t.status === 'Finalizado');
+
+                return matchesArea && matchesTab;
             });
 
             if (filteredTasks.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" class="text-center py-6 text-slate-400">Sin tareas registradas con estos filtros.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="12" class="text-center py-6 text-slate-400">Sin tareas registradas en esta sección.</td></tr>`;
                 return;
             }
 
@@ -532,6 +555,9 @@
                     <td class="p-3 font-medium text-slate-800 border-b">${t.title}</td>
                     <td class="p-3 border-b text-xs font-bold text-indigo-700">${t.taskTime ? `🕒 ${t.taskTime} hs` : '<span class="font-normal text-slate-400">Todo el día</span>'}</td>
                     <td class="p-3 text-xs text-slate-600 border-b max-w-xs">${t.description || '<span class="italic text-slate-300">Sin detalles</span>'}</td>
+                    <td class="p-3 text-xs border-b max-w-xs font-medium text-slate-700">
+                        ${t.notes ? `<div class="bg-amber-50 border border-amber-200 text-amber-900 p-1.5 rounded">💬 ${t.notes}</div>` : '<span class="italic text-slate-300">Sin observaciones</span>'}
+                    </td>
                     <td class="p-3 text-slate-600 border-b">${t.assignedTo}</td>
                     <td class="p-3 text-slate-600 border-b">${formatDateShort(t.startDate)}</td>
                     <td class="p-3 text-slate-600 border-b font-medium">${formatDateShort(t.dueDate)}</td>
@@ -543,7 +569,7 @@
                     <td class="p-3 border-b text-center">
                         <div class="flex items-center justify-center gap-1">
                             ${t.status !== 'Finalizado' ? `<button onclick="openCompleteModal('${t.id}')" title="Completar" class="p-1.5 bg-emerald-50 text-emerald-700 rounded"><i data-lucide="check-circle" class="w-4 h-4"></i></button>` : ''}
-                            <button onclick="openModal('${t.id}')" title="Editar" class="p-1.5 bg-slate-100 text-slate-700 rounded"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="openModal('${t.id}')" title="Editar / Bitácora" class="p-1.5 bg-slate-100 text-slate-700 rounded"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
                             <button onclick="deleteTask('${t.id}')" title="Eliminar" class="p-1.5 bg-rose-50 text-rose-600 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     </td>
@@ -560,10 +586,11 @@
             if (taskId) {
                 const task = tasks.find(t => t.id === taskId);
                 if (task) {
-                    document.getElementById('modal-title').innerText = 'Editar Tarea / Evento';
+                    document.getElementById('modal-title').innerText = 'Editar Tarea / Bitácora';
                     document.getElementById('task-id').value = task.id;
                     document.getElementById('task-title').value = task.title;
                     document.getElementById('task-description').value = task.description || '';
+                    document.getElementById('task-notes').value = task.notes || '';
                     document.getElementById('task-area').value = task.area;
                     document.getElementById('task-assigned').value = task.assignedTo;
                     document.getElementById('task-start-date').value = task.startDate;
@@ -575,6 +602,7 @@
                 document.getElementById('modal-title').innerText = 'Nueva Tarea / Evento';
                 document.getElementById('task-id').value = '';
                 document.getElementById('task-description').value = '';
+                document.getElementById('task-notes').value = '';
                 document.getElementById('task-time').value = '';
                 document.getElementById('task-start-date').value = formatDateISO(new Date());
                 document.getElementById('task-due-date').value = formatDateISO(new Date());
@@ -590,6 +618,7 @@
             const id = document.getElementById('task-id').value;
             const title = document.getElementById('task-title').value;
             const description = document.getElementById('task-description').value;
+            const notes = document.getElementById('task-notes').value;
             const area = document.getElementById('task-area').value;
             const assignedTo = document.getElementById('task-assigned').value;
             const startDate = document.getElementById('task-start-date').value;
@@ -599,11 +628,11 @@
 
             if (id) {
                 const idx = tasks.findIndex(t => t.id === id);
-                if (idx !== -1) tasks[idx] = { ...tasks[idx], title, description, area, assignedTo, startDate, dueDate, taskTime, status };
+                if (idx !== -1) tasks[idx] = { ...tasks[idx], title, description, notes, area, assignedTo, startDate, dueDate, taskTime, status };
             } else {
                 tasks.push({
                     id: 'TSK-' + Math.floor(100 + Math.random() * 900),
-                    title, description, area, assignedTo, startDate, dueDate, taskTime, status,
+                    title, description, notes, area, assignedTo, startDate, dueDate, taskTime, status,
                     completedAt: null, completedBy: null
                 });
             }
