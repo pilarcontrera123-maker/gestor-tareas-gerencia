@@ -58,7 +58,7 @@
                     <div>
                         <h1 class="text-xl font-bold leading-tight">Sistema de Seguimiento y Calendario</h1>
                         <div class="flex items-center gap-2">
-                            <p class="text-xs text-slate-400">Control de Tareas, Vencimientos y Registro de Áreas</p>
+                            <p class="text-xs text-slate-400">Control Colaborativo de Tareas y Registro de Áreas</p>
                             <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
                                 <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Nube en Vivo
                             </span>
@@ -73,11 +73,11 @@
                     </button>
                     <button onclick="exportWeeklyPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow">
                         <i data-lucide="download" class="w-4 h-4"></i>
-                        Exportar / Imprimir PDF
+                        Exportar PDF
                     </button>
                     <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow">
                         <i data-lucide="plus" class="w-4 h-4"></i>
-                        Nueva Tarea / Evento
+                        Nueva Tarea
                     </button>
                     <button onclick="logout()" title="Cerrar Sesión" class="bg-rose-900/50 hover:bg-rose-800 border border-rose-700 text-rose-200 p-2 rounded-lg transition">
                         <i data-lucide="log-out" class="w-4 h-4"></i>
@@ -89,101 +89,174 @@
         <!-- Main Content -->
         <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full flex flex-col gap-6">
 
-            <!-- Controls & Filters (No Print) -->
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 no-print">
-                <div class="flex flex-wrap items-center gap-3">
+            <!-- BARRA DE NAVEGACIÓN PRINCIPAL (PESTAÑAS DE VISTA) -->
+            <div class="bg-white p-2 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 no-print">
+                <div class="flex flex-wrap gap-2 text-sm font-bold">
+                    <button id="view-btn-calendar" onclick="switchMainView('calendar')" class="px-4 py-2 rounded-lg transition bg-indigo-600 text-white shadow flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4"></i> Vista Calendario
+                    </button>
+                    <button id="view-btn-urgent" onclick="switchMainView('urgent')" class="px-4 py-2 rounded-lg transition bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4 text-rose-600"></i> Matriz de Urgencias y Prioridad
+                    </button>
+                    <button id="view-btn-table" onclick="switchMainView('table')" class="px-4 py-2 rounded-lg transition bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-2">
+                        <i data-lucide="list" class="w-4 h-4 text-indigo-600"></i> Registro Detallado y Tablas
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Filtrar por Área:</label>
-                        <select id="filter-area" onchange="renderAll()" class="bg-slate-50 border border-slate-300 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+                        <select id="filter-area" onchange="renderAll()" class="bg-slate-50 border border-slate-300 rounded-lg text-xs px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none font-semibold"></select>
                     </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <button onclick="changeWeek(-1)" class="p-2 border rounded-lg hover:bg-slate-100"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                    <span id="week-label" class="text-sm font-semibold text-slate-700 px-2">Semana Actual</span>
-                    <button onclick="changeWeek(1)" class="p-2 border rounded-lg hover:bg-slate-100"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                 </div>
             </div>
 
-            <!-- Weekly Calendar Export Area -->
-            <div id="printable-calendar-area" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center border-b pb-4 mb-4">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-800">Calendario Semanal de Tareas, Eventos y Vencimientos</h2>
-                        <p id="area-subtitle" class="text-sm text-slate-500">Área: Todas | Reporte Semanal Cronológico Continuo</p>
+            <!-- VISTA 1: CALENDARIO SEMANAL -->
+            <div id="main-view-calendar" class="space-y-4">
+                <div id="printable-calendar-area" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center border-b pb-4 mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">Calendario Semanal de Tareas</h2>
+                            <p id="area-subtitle" class="text-sm text-slate-500">Haz clic en cualquier evento para editarlo o ver avances de tus compañeros</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2 no-print">
+                                <button onclick="changeWeek(-1)" class="p-2 border rounded-lg hover:bg-slate-100"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                                <span id="week-label" class="text-sm font-semibold text-slate-700 px-2">Semana Actual</span>
+                                <button onclick="changeWeek(1)" class="p-2 border rounded-lg hover:bg-slate-100"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                            </div>
+                            <div class="text-right">
+                                <span id="print-date-range" class="text-sm font-semibold text-indigo-600 block"></span>
+                                <p class="text-xs text-slate-400">Generado el: <span id="current-date-str"></span></p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <span id="print-date-range" class="text-sm font-semibold text-indigo-600"></span>
-                        <p class="text-xs text-slate-400">Generado el: <span id="current-date-str"></span></p>
-                    </div>
-                </div>
 
-                <div id="calendar-grid" class="grid grid-cols-1 md:grid-cols-5 gap-4"></div>
-            </div>
-
-            <!-- Table View con Pestañas de Clasificación -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 no-print space-y-4">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-3">
-                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <i data-lucide="list" class="w-5 h-5 text-indigo-600"></i>
-                        Registro Detallado y Trazabilidad de Tareas
-                    </h3>
-
-                    <!-- Pestañas de Filtro por Estado -->
-                    <div class="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
-                        <button id="tab-ALL" onclick="setTab('ALL')" class="px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-sm">Todas</button>
-                        <button id="tab-PROCESO" onclick="setTab('PROCESO')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">🟡 En Proceso</button>
-                        <button id="tab-PENDIENTE" onclick="setTab('PENDIENTE')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">🔴 Pendientes</button>
-                        <button id="tab-VENCIDO" onclick="setTab('VENCIDO')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">⚠️ Vencidas</button>
-                        <button id="tab-FINALIZADO" onclick="setTab('FINALIZADO')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">🟢 Finalizadas</button>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
-                                <th class="p-3 border-b">ID / Área</th>
-                                <th class="p-3 border-b">Tarea / Evento</th>
-                                <th class="p-3 border-b">Horario</th>
-                                <th class="p-3 border-b">Descripción / Detalles</th>
-                                <th class="p-3 border-b">Avances / Bitácora</th>
-                                <th class="p-3 border-b">Asignado a</th>
-                                <th class="p-3 border-b">Inicio</th>
-                                <th class="p-3 border-b">Vencimiento</th>
-                                <th class="p-3 border-b">Días Restantes</th>
-                                <th class="p-3 border-b">Estado</th>
-                                <th class="p-3 border-b">Registro Finalización</th>
-                                <th class="p-3 border-b text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="task-table-body" class="text-sm divide-y divide-slate-200"></tbody>
-                    </table>
+                    <div id="calendar-grid" class="grid grid-cols-1 md:grid-cols-5 gap-4"></div>
                 </div>
             </div>
+
+            <!-- VISTA 2: TABLERO DE URGENCIAS Y PRIORIDADES -->
+            <div id="main-view-urgent" class="hidden space-y-4">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div class="border-b pb-4 mb-4">
+                        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="shield-alert" class="w-6 h-6 text-rose-600"></i>
+                            Matriz de Prioridades y Urgencias
+                        </h2>
+                        <p class="text-xs text-slate-500">Clasificación de tareas pendientes según su nivel de prioridad (A, B, C) y fechas límites.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Columna Prioridad A -->
+                        <div class="bg-rose-50/50 border border-rose-200 rounded-xl p-4">
+                            <div class="flex justify-between items-center border-b border-rose-200 pb-2 mb-3">
+                                <h3 class="font-bold text-rose-900 text-sm flex items-center gap-1">🔴 Prioridad A - Alta / Urgente</h3>
+                                <span id="count-prio-A" class="bg-rose-200 text-rose-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                            </div>
+                            <div id="list-prio-A" class="space-y-3"></div>
+                        </div>
+
+                        <!-- Columna Prioridad B -->
+                        <div class="bg-amber-50/50 border border-amber-200 rounded-xl p-4">
+                            <div class="flex justify-between items-center border-b border-amber-200 pb-2 mb-3">
+                                <h3 class="font-bold text-amber-900 text-sm flex items-center gap-1">🟡 Prioridad B - Media</h3>
+                                <span id="count-prio-B" class="bg-amber-200 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                            </div>
+                            <div id="list-prio-B" class="space-y-3"></div>
+                        </div>
+
+                        <!-- Columna Prioridad C -->
+                        <div class="bg-slate-100/70 border border-slate-200 rounded-xl p-4">
+                            <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-3">
+                                <h3 class="font-bold text-slate-700 text-sm flex items-center gap-1">🔵 Prioridad C - Baja / Rutina</h3>
+                                <span id="count-prio-C" class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                            </div>
+                            <div id="list-prio-C" class="space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTA 3: REGISTRO DETALLADO Y TABLAS CON PESTAÑAS -->
+            <div id="main-view-table" class="hidden space-y-4">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 no-print space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-3">
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="list" class="w-5 h-5 text-indigo-600"></i>
+                            Registro Detallado y Trazabilidad
+                        </h3>
+
+                        <!-- Pestañas Filtro de Estado -->
+                        <div class="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                            <button id="tab-ALL" onclick="setTab('ALL')" class="px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-sm">Todas</button>
+                            <button id="tab-PROCESO" onclick="setTab('PROCESO')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">🟡 En Proceso</button>
+                            <button id="tab-PENDIENTE" onclick="setTab('PENDIENTE')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">🔴 Pendientes</button>
+                            <button id="tab-VENCIDO" onclick="setTab('VENCIDO')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">⚠️ Vencidas</button>
+                            <button id="tab-FINALIZADO" onclick="setTab('FINALIZADO')" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">🟢 Finalizadas</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold">
+                                    <th class="p-3 border-b">Prioridad</th>
+                                    <th class="p-3 border-b">ID / Área</th>
+                                    <th class="p-3 border-b">Tarea / Evento</th>
+                                    <th class="p-3 border-b">Horario</th>
+                                    <th class="p-3 border-b">Descripción</th>
+                                    <th class="p-3 border-b">Avances / Bitácora</th>
+                                    <th class="p-3 border-b">Asignado a</th>
+                                    <th class="p-3 border-b">Inicio</th>
+                                    <th class="p-3 border-b">Vencimiento</th>
+                                    <th class="p-3 border-b">Días Restantes</th>
+                                    <th class="p-3 border-b">Estado</th>
+                                    <th class="p-3 border-b text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="task-table-body" class="text-sm divide-y divide-slate-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
     <!-- Modal Agregar / Editar Tarea -->
     <div id="task-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-50 no-print">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
             <h3 id="modal-title" class="text-lg font-bold text-slate-800 mb-4">Nueva Tarea / Evento</h3>
 
             <form id="task-form" onsubmit="saveTask(event)" class="space-y-4">
                 <input type="hidden" id="task-id">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Título de la Tarea / Evento *</label>
-                    <input type="text" id="task-title" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Control de Libros Sueldos">
+                
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Título de la Tarea / Evento *</label>
+                        <input type="text" id="task-title" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Control de Libros Sueldos">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Prioridad *</label>
+                        <select id="task-priority" required class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-bold">
+                            <option value="A" class="text-rose-600">🔴 A - Alta</option>
+                            <option value="B" class="text-amber-600" selected>🟡 B - Media</option>
+                            <option value="C" class="text-slate-600">🔵 C - Baja</option>
+                        </select>
+                    </div>
                 </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción / Detalles Iniciales</label>
                     <textarea id="task-description" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Escanear fojas 0001 a 0250 de la Caja N° 1..."></textarea>
                 </div>
+
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Avances / Observaciones de Evolución</label>
-                    <textarea id="task-notes" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-amber-50/50" placeholder="Ej: Ya mandé las notas, falta que las devuelvan firmadas..."></textarea>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Avances / Bitácora (¿Qué se hizo y qué falta hacer?)</label>
+                    <textarea id="task-notes" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-amber-50/50" placeholder="Ej: Ya mandé las notas el martes, falta que nos devuelvan el duplicado firmado..."></textarea>
                 </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Área / Sector *</label>
@@ -194,13 +267,14 @@
                         <input type="text" id="task-assigned" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                 </div>
+
                 <div class="grid grid-cols-3 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha de Inicio *</label>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha Inicio *</label>
                         <input type="date" id="task-start-date" required class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha Vencimiento *</label>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Vencimiento *</label>
                         <input type="date" id="task-due-date" required class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div>
@@ -208,14 +282,16 @@
                         <input type="time" id="task-time" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                 </div>
+
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Estado Inicial</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Estado Actual</label>
                     <select id="task-status" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="Pendiente">🔴 Pendiente</option>
                         <option value="En Proceso">🟡 En Proceso</option>
                         <option value="Finalizado">🟢 Finalizado</option>
                     </select>
                 </div>
+
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100">Cancelar</button>
                     <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow">Guardar Tarea</button>
@@ -283,6 +359,7 @@
         let tasks = [];
         let weekOffset = 0;
         let activeTab = 'ALL';
+        let currentMainView = 'calendar';
 
         db.ref('app_data/tasks').on('value', (snapshot) => {
             const data = snapshot.val();
@@ -327,6 +404,22 @@
         function logout() {
             sessionStorage.removeItem('auth_success');
             location.reload();
+        }
+
+        function switchMainView(viewName) {
+            currentMainView = viewName;
+            ['calendar', 'urgent', 'table'].forEach(v => {
+                const btn = document.getElementById(`view-btn-${v}`);
+                const view = document.getElementById(`main-view-${v}`);
+                if (v === viewName) {
+                    btn.className = 'px-4 py-2 rounded-lg transition bg-indigo-600 text-white shadow flex items-center gap-2';
+                    view.classList.remove('hidden');
+                } else {
+                    btn.className = 'px-4 py-2 rounded-lg transition bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-2';
+                    view.classList.add('hidden');
+                }
+            });
+            renderAll();
         }
 
         function setTab(tabName) {
@@ -424,8 +517,15 @@
             return { text: `${diffDays} días restantes`, class: 'bg-slate-100 text-slate-700', isExpired: false };
         }
 
+        function getPriorityBadge(priority) {
+            if (priority === 'A') return '<span class="bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded text-[10px] border border-rose-300">A - ALTA</span>';
+            if (priority === 'B') return '<span class="bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded text-[10px] border border-amber-300">B - MEDIA</span>';
+            return '<span class="bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded text-[10px] border border-slate-300">C - BAJA</span>';
+        }
+
         function renderAll() {
             renderCalendar();
+            renderUrgentMatrix();
             renderTable();
             document.getElementById('current-date-str').innerText = new Date().toLocaleDateString('es-AR');
             lucide.createIcons();
@@ -436,7 +536,7 @@
         function renderCalendar() {
             const areaFilter = document.getElementById('filter-area').value;
             const calendarGrid = document.getElementById('calendar-grid');
-            document.getElementById('area-subtitle').innerText = `Área: ${areaFilter} | Vista Semanal Rango Continuo`;
+            document.getElementById('area-subtitle').innerText = `Área: ${areaFilter} | Haz clic en cualquier tarjeta para editar o ver observaciones`;
 
             const monday = getStartOfWeek(weekOffset);
             const weekDays = [];
@@ -461,7 +561,6 @@
                 const dayName = dayNames[index];
                 const dayFormatted = dayDate.getDate() + '/' + (dayDate.getMonth() + 1);
 
-                // MOSTRAR TAREAS ACTIVAS EN TODO SU RANGO DE DÍAS (INICIO <= HOY <= VENCIMIENTO)
                 let dayTasks = tasks.filter(t => {
                     const matchesArea = (areaFilter === 'TODAS' || t.area === areaFilter);
                     const isInRange = (t.startDate <= dateISO && t.dueDate >= dateISO);
@@ -469,6 +568,7 @@
                 });
 
                 dayTasks.sort((a, b) => {
+                    if (a.priority !== b.priority) return a.priority.localeCompare(b.priority);
                     if (a.taskTime && !b.taskTime) return -1;
                     if (!a.taskTime && b.taskTime) return 1;
                     if (a.taskTime && b.taskTime) return a.taskTime.localeCompare(b.taskTime);
@@ -493,12 +593,13 @@
                         let badgeColor = t.status === 'En Proceso' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800';
 
                         dayHtml += `
-                            <div class="p-2 rounded border bg-white shadow-sm text-xs space-y-1">
+                            <div onclick="openModal('${t.id}')" class="p-2 rounded border bg-white shadow-sm hover:shadow-md transition cursor-pointer text-xs space-y-1 hover:border-indigo-400">
                                 <div class="flex items-center justify-between gap-1">
                                     <span class="font-semibold text-slate-800 leading-snug block">${t.title}</span>
-                                    ${t.taskTime ? `<span class="bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">🕒 ${t.taskTime} hs</span>` : ''}
+                                    ${getPriorityBadge(t.priority || 'B')}
                                 </div>
-                                ${t.notes ? `<p class="text-[10px] text-indigo-700 font-medium bg-indigo-50 p-1 rounded">💬 ${t.notes}</p>` : (t.description ? `<p class="text-[10px] text-slate-500 line-clamp-1">${t.description}</p>` : '')}
+                                ${t.taskTime ? `<p class="text-[10px] font-bold text-indigo-700">🕒 ${t.taskTime} hs</p>` : ''}
+                                ${t.notes ? `<p class="text-[10px] text-indigo-900 font-medium bg-amber-50 p-1 rounded border border-amber-200">💬 ${t.notes}</p>` : (t.description ? `<p class="text-[10px] text-slate-500 line-clamp-1">${t.description}</p>` : '')}
                                 <div class="flex flex-wrap gap-1 items-center pt-1 text-[10px]">
                                     <span class="px-1.5 py-0.5 rounded ${badgeColor}">${t.status}</span>
                                     ${isDue ? '<span class="bg-rose-600 text-white font-bold px-1 rounded">VENCE HOY</span>' : ''}
@@ -516,6 +617,55 @@
                 dayHtml += `</div></div>`;
                 calendarGrid.innerHTML += dayHtml;
             });
+        }
+
+        function renderUrgentMatrix() {
+            const areaFilter = document.getElementById('filter-area').value;
+            const prioAContainer = document.getElementById('list-prio-A');
+            const prioBContainer = document.getElementById('list-prio-B');
+            const prioCContainer = document.getElementById('list-prio-C');
+
+            prioAContainer.innerHTML = '';
+            prioBContainer.innerHTML = '';
+            prioCContainer.innerHTML = '';
+
+            const pendingTasks = tasks.filter(t => {
+                const matchesArea = (areaFilter === 'TODAS' || t.area === areaFilter);
+                return matchesArea && t.status !== 'Finalizado';
+            });
+
+            let countA = 0, countB = 0, countC = 0;
+
+            pendingTasks.forEach(t => {
+                const daysInfo = calculateDaysRemaining(t.dueDate, t.status);
+                const prio = t.priority || 'B';
+
+                const cardHtml = `
+                    <div onclick="openModal('${t.id}')" class="bg-white p-3 rounded-lg border shadow-sm hover:shadow-md cursor-pointer transition space-y-2 border-slate-200 hover:border-indigo-400">
+                        <div class="flex justify-between items-start gap-2">
+                            <h4 class="font-bold text-slate-800 text-xs">${t.title}</h4>
+                            <span class="px-2 py-0.5 rounded text-[10px] ${daysInfo.class}">${daysInfo.text}</span>
+                        </div>
+                        ${t.notes ? `<p class="text-[11px] text-slate-700 bg-amber-50 p-2 rounded border border-amber-200">💬 <b>Avances:</b> ${t.notes}</p>` : (t.description ? `<p class="text-[11px] text-slate-500 line-clamp-2">${t.description}</p>` : '')}
+                        <div class="flex justify-between items-center text-[10px] text-slate-500 pt-1 border-t">
+                            <span>👤 <b>${t.assignedTo}</b></span>
+                            <span>🏢 ${t.area}</span>
+                        </div>
+                    </div>
+                `;
+
+                if (prio === 'A') { prioAContainer.innerHTML += cardHtml; countA++; }
+                else if (prio === 'B') { prioBContainer.innerHTML += cardHtml; countB++; }
+                else { prioCContainer.innerHTML += cardHtml; countC++; }
+            });
+
+            document.getElementById('count-prio-A').innerText = countA;
+            document.getElementById('count-prio-B').innerText = countB;
+            document.getElementById('count-prio-C').innerText = countC;
+
+            if (countA === 0) prioAContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-4">Sin urgencias Alta (A)</p>';
+            if (countB === 0) prioBContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-4">Sin pendientes Media (B)</p>';
+            if (countC === 0) prioCContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-4">Sin pendientes Baja (C)</p>';
         }
 
         function renderTable() {
@@ -548,6 +698,7 @@
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50 transition';
                 tr.innerHTML = `
+                    <td class="p-3 border-b">${getPriorityBadge(t.priority || 'B')}</td>
                     <td class="p-3 font-mono text-xs font-semibold text-slate-600 border-b">
                         <div>${t.id}</div>
                         <span class="text-[10px] text-slate-400 uppercase font-sans">${t.area}</span>
@@ -563,9 +714,6 @@
                     <td class="p-3 text-slate-600 border-b font-medium">${formatDateShort(t.dueDate)}</td>
                     <td class="p-3 border-b"><span class="px-2 py-1 rounded text-xs ${daysInfo.class}">${daysInfo.text}</span></td>
                     <td class="p-3 border-b font-semibold text-xs">${statusBadge}</td>
-                    <td class="p-3 border-b text-xs text-slate-500">
-                        ${t.completedAt ? `<div><b>Completó:</b> ${t.completedBy}</div><div class="text-[10px] text-slate-400">🕒 ${t.completedAt}</div>` : '<span class="italic text-slate-400">Sin finalizar</span>'}
-                    </td>
                     <td class="p-3 border-b text-center">
                         <div class="flex items-center justify-center gap-1">
                             ${t.status !== 'Finalizado' ? `<button onclick="openCompleteModal('${t.id}')" title="Completar" class="p-1.5 bg-emerald-50 text-emerald-700 rounded"><i data-lucide="check-circle" class="w-4 h-4"></i></button>` : ''}
@@ -589,6 +737,7 @@
                     document.getElementById('modal-title').innerText = 'Editar Tarea / Bitácora';
                     document.getElementById('task-id').value = task.id;
                     document.getElementById('task-title').value = task.title;
+                    document.getElementById('task-priority').value = task.priority || 'B';
                     document.getElementById('task-description').value = task.description || '';
                     document.getElementById('task-notes').value = task.notes || '';
                     document.getElementById('task-area').value = task.area;
@@ -601,6 +750,7 @@
             } else {
                 document.getElementById('modal-title').innerText = 'Nueva Tarea / Evento';
                 document.getElementById('task-id').value = '';
+                document.getElementById('task-priority').value = 'B';
                 document.getElementById('task-description').value = '';
                 document.getElementById('task-notes').value = '';
                 document.getElementById('task-time').value = '';
@@ -617,6 +767,7 @@
             e.preventDefault();
             const id = document.getElementById('task-id').value;
             const title = document.getElementById('task-title').value;
+            const priority = document.getElementById('task-priority').value;
             const description = document.getElementById('task-description').value;
             const notes = document.getElementById('task-notes').value;
             const area = document.getElementById('task-area').value;
@@ -628,11 +779,11 @@
 
             if (id) {
                 const idx = tasks.findIndex(t => t.id === id);
-                if (idx !== -1) tasks[idx] = { ...tasks[idx], title, description, notes, area, assignedTo, startDate, dueDate, taskTime, status };
+                if (idx !== -1) tasks[idx] = { ...tasks[idx], title, priority, description, notes, area, assignedTo, startDate, dueDate, taskTime, status };
             } else {
                 tasks.push({
                     id: 'TSK-' + Math.floor(100 + Math.random() * 900),
-                    title, description, notes, area, assignedTo, startDate, dueDate, taskTime, status,
+                    title, priority, description, notes, area, assignedTo, startDate, dueDate, taskTime, status,
                     completedAt: null, completedBy: null
                 });
             }
